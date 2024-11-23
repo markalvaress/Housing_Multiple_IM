@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 # os.chdir("Housing_Multiple_IM")
 
-hp_data = pd.read_csv("clean_ldn_house_data.csv", dtype = {'easting': 'float64','northing': 'float64','price': 'int64'})
+hp_data = pd.read_csv("clean_house_data/clean_ldn_house_data.csv", dtype = {'easting': 'float64','northing': 'float64','price': 'int64'})
 
 # remove and then rescale values to between 1 and 100
 hp_data = hp_data[(~hp_data.easting.isna()) & (~hp_data.northing.isna())]
@@ -25,7 +25,7 @@ num_houses_there = np.zeros((m, n))
 
 # stick the sum of house prices into the relevant slots in the matrix
 for i, price in enumerate(hp_data['price'].to_list()):
-    price=np.log(price)
+    price=np.log(price) # to make for a better graph, we won't necessarily do this in the end
     north = int(rescaled_northing[i])
     east = int(rescaled_easting[i])
 
@@ -46,8 +46,8 @@ plt.imshow(hp_matrix)
 plt.colorbar()
 plt.show()
 
-# save an array of just the locations where there are houses in our london dataset
-london_map = np.where(hp_matrix == -1, -1, 0)
+# save an array of just the locations where there are houses in our london dataset. Matches Nathan's city generator.
+london_map = np.where(hp_matrix == -1, 0, 1)
 np.savetxt("london_map_array.txt", london_map)
 
 # this poops the bed because non-house values are set to -1

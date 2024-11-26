@@ -2,20 +2,24 @@ import numpy as np
 import scipy.signal
 
 def calculate_num_neighbours(house_grid, r):
-    """Assumes house_grid has -1s for non-houses. Uses that rather than 0 to allow for houses that actually have 0 value."""
+    """Create a grid that counts the number of neighbours around that point in house_grid, in square nbhd radius r.
+    Assumes house_grid has -1s for non-houses. Uses that rather than 0 to allow for houses that actually have 0 value."""
     # split into 1 for has house there and 0 for doesn't
     house_grid_binary = np.copy(house_grid)
     house_grid_binary = np.where(house_grid_binary == -1, 0, 1)
+
+    # counts number of houses in nbhd including myself
     kernel = np.ones((2*r + 1, 2*r + 1))
     num_neighbours = scipy.signal.convolve2d(house_grid_binary, kernel, mode='same', boundary="symm")
+
     return num_neighbours
 
 def calculate_new_house_values_conv(house_grid, affluence_grid, r, lambda_, calc_num_neighbours = False):
     """Calculates new house values using a convolution.
 
     Args:
-        house_grid (np.ndarray): 
-        affluence_grid (np.ndarray): 
+        house_grid (np.ndarray): House price grid V
+        affluence_grid (np.ndarray): Affluence grid A
         r (int): Neighbourhood radius
         lambda_ (float): Modeling parameter
         calc_num_neighbours (bool, optional): Whether to calculate number of neighbours or to just use kernel size. When the 
@@ -24,6 +28,7 @@ def calculate_new_house_values_conv(house_grid, affluence_grid, r, lambda_, calc
     Returns:
         np.ndarray: The new house values
     """
+    # Reset empty grid points (roads etc) to 0 to aid calculation
     house_grid_zeroed = np.copy(house_grid)
     house_grid_zeroed = np.where(house_grid_zeroed == -1, 0, house_grid_zeroed)
 
@@ -34,7 +39,8 @@ def calculate_new_house_values_conv(house_grid, affluence_grid, r, lambda_, calc
         num_neighbours = calculate_num_neighbours(house_grid, r)
     else:
         num_neighbours = kernel.size
-    # idk if symmetric bdary conditions is the right thing to do
+
+    # Updated house prices. idk if symmetric bdary conditions is the right thing to do
     nbhd_average = scipy.signal.convolve2d(house_grid_zeroed, kernel, mode='same', boundary="symm") / num_neighbours
     V_tplus1 = affluence_grid + lambda_*nbhd_average
     V_tplus1 = np.where(house_grid == -1, -1, V_tplus1) # make sure to keep gaps from before

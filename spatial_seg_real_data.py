@@ -2,9 +2,6 @@ import pandas as pd
 import spatial_seg as spseg
 import numpy as np
 import matplotlib.pyplot as plt
-# import os
-
-# os.chdir("Housing_Multiple_IM")
 
 hp_data = pd.read_csv("clean_house_data/clean_ldn_house_data.csv", dtype = {'easting': 'float64','northing': 'float64','price': 'int64'})
 
@@ -25,7 +22,7 @@ num_houses_there = np.zeros((m, n))
 
 # stick the sum of house prices into the relevant slots in the matrix
 for i, price in enumerate(hp_data['price'].to_list()):
-    price=np.log(price) # to make for a better graph, we won't necessarily do this in the end
+    #price=np.log(price) # to make for a better graph, we won't necessarily do this in the end
     north = int(rescaled_northing[i])
     east = int(rescaled_easting[i])
 
@@ -42,13 +39,54 @@ for i in range(m):
         if num_houses_there[i, j] != 0:
             hp_matrix[i,j] = hp_matrix[i,j] / num_houses_there[i,j]
 
-plt.imshow(hp_matrix)
-plt.colorbar()
-plt.show()
-
 # save an array of just the locations where there are houses in our london dataset. Matches Nathan's city generator.
 london_map = np.where(hp_matrix == -1, 0, 1)
 np.savetxt("london_map_array.txt", london_map)
 
-# this poops the bed because non-house values are set to -1
-#spseg.spatial_segregation(hp_matrix)
+
+# Split house prices into to 3rds --------------------------------------------------------------------
+# first, get a single array of house prices
+hp_array = hp_matrix[hp_matrix > -1]
+percentile_33 = np.percentile(hp_array, 33.3)
+percentile_67 = np.percentile(hp_array, 66.7)
+
+hp_matrix_binned = np.ones_like(hp_matrix)
+for i in range(m):
+    for j in range(n):
+        price = hp_matrix[i,j]
+        if price != -1:
+            if price <= percentile_33:
+                hp_matrix_binned[i,j] = 2
+            elif price <= percentile_67:
+                hp_matrix_binned[i,j] = 3
+            else:
+                hp_matrix_binned[i,j] = 4
+
+
+plt.imshow(hp_matrix_binned, origin = 'lower')
+plt.show()
+
+# Find expected value of H_{BO}(A) where A takes random values between 1 and 3 ----------------------------
+
+n_for_exp_entropy = 100
+random_entropies = np.zeros(n_for_exp_entropy)
+for k in range(n_for_exp_entropy):
+    print(f"{k=}") # debugging
+    hp_matrix_random = np.ones_like(hp_matrix)
+    for i in range(m):
+        for j in range(n):
+            if london_map[i, j] == 1:  # 1 is our value for houses
+                hp_matrix_random[i, j] = np.random.choice(
+                    [2,3,4],
+                    p=(1/3, 1/3, 1/3)
+                )
+
+    random_entropies[k] = spseg.H_BO(hp_matrix_random)
+
+expected_entropy = np.average(random_entropies)
+entropy_sd = np.std(random_entropies)
+
+# Calc London segregation index
+london_sp_seg = spseg.spatial_segregation(hp_matrix_binned, expected_entropy)
+# idek if this is above the standard deviation
+print(f"{london_sp_seg=}, {expected_entropy=}, {entropy_sd=}")

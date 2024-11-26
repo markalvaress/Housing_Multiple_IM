@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 
-def spatial_segregation(U):
+def H_BO(U):
     m, n = U.shape
     assert m == n, "U (the matrix, not you) must be square" # We could maybe generalise to m != n? But then we'd have to compute our own expected_entropy.
 
@@ -16,9 +16,19 @@ def spatial_segregation(U):
     p = eigenvals / p_i_denom
 
     # Measure the entropy and subtract from the expected entropy to get the segregation measure
-    H_BO = -sum(p[1:] * np.log(p[1:]))
-    expected_entropy = np.log(3/5 * n) # this is given in the text. Although they don't specify natural log, this is closest to actual results
-    S_BO = expected_entropy - H_BO
+    entropy = -sum(p[1:] * np.log(p[1:]))
+    return entropy
+
+def spatial_segregation(U, expected_entropy = None):
+    m, n = U.shape
+    assert m == n, "U (the matrix, not you) must be square" # We could maybe generalise to m != n? But then we'd have to compute our own expected_entropy.
+
+    # Measure the entropy and subtract from the expected entropy to get the segregation measure
+    entropy = H_BO(U)
+    if expected_entropy is None:
+        expected_entropy = np.log(3/5 * n) # this is given in the text (for a full square grid up to n = 1000). Although they don't specify natural log, this is closest to actual results
+    
+    S_BO = expected_entropy - entropy
 
     return S_BO
 

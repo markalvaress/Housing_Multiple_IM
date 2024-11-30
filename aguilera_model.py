@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.signal
+import random
 
 def calculate_num_neighbours(house_grid, r):
     """Create a grid that counts the number of neighbours around that point in house_grid, in square nbhd radius r.
@@ -66,3 +67,21 @@ def initialise_affluence_and_house_grids(city_grid, affluence_levels, p):
                 house_grid[i, j] = np.random.uniform(0,1)  # Mark as a house
 
     return affluence_grid, house_grid
+
+def choose_two_houses_rand(house_grid):
+    # Choose two random houses, and keep going until they're both nonempty 
+    n, m = house_grid.shape
+    x1, y1 = random.randint(0, n-1), random.randint(0, m-1)
+    x2, y2 = random.randint(0, n-1), random.randint(0, m-1)
+    while (house_grid[x1, y1] == -1) or (house_grid[x2, y2] == -1):
+        x1, y1 = random.randint(0, n-1), random.randint(0, m-1)
+        x2, y2 = random.randint(0, n-1), random.randint(0, m-1)
+
+    return x1, y1, x2, y2
+
+def calculate_delta_econ(affluence_grid, house_grid, x1, y1, x2, y2):
+    A_x1, V_x1 = affluence_grid[x1, y1], house_grid[x1, y1]
+    A_x2, V_x2 = affluence_grid[x2, y2], house_grid[x2, y2]
+    
+    delta = (A_x1 - V_x1)**2 + (A_x2 - V_x2)**2 - (A_x1 - V_x2)**2 - (A_x2 - V_x1)**2
+    return delta

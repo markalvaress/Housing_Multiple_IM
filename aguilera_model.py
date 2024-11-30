@@ -38,6 +38,7 @@ def calculate_new_house_values_conv(house_grid, affluence_grid, r, lambda_, calc
 
     if calc_num_neighbours:
         num_neighbours = calculate_num_neighbours(house_grid, r)
+        num_neighbours = np.where(num_neighbours == 0, 1, num_neighbours) # so that we don't get divide by zero. All of the empty (road) cells still get reset to -1 below so we're fine.
     else:
         num_neighbours = kernel.size
 

@@ -2,6 +2,50 @@ import numpy as np
 import random
 import aguilera_model as am
 
+def initialise_house_and_demog_grids(city_grid, affluence_levels, p_affluence, p_ethnicity):
+    """Initialises house price and demographics grids based on the city grid.
+
+    Args:
+        city_grid (np.ndarray): City grid, with 1s for houses and everything else is not a house
+        affluence_levels (dict): A dictionary containing affluence levels for "rich", "middle", and "poor"
+        p_affluence (list): A list or array of proportion of the population that is rich, middle, or poor respectively
+        p_ethnicity (list): A list or array with the proportion of the population in different ethnic groups. The length of this list defines the number of ethnicities
+
+    Returns:
+        affluence_grid, house_grid, politics_grid, religion_grid, ethnicity_grid (np.ndarray): The relevant matrices.
+    """
+    rho = 0.3 # this should be an argument to the function
+    n, m = city_grid.shape
+    noise = np.random.rand(n, m)
+    ethnicity_choices = np.arange(len(p_ethnicity)) + 1 # so if there are 6 ethnicities this will be 1,...,6
+
+    affluence_grid = -1*np.ones((n, m), dtype=float)
+    house_grid = -1*np.ones((n, m), dtype=float)
+    politics_grid = -1*np.ones((n, m), dtype = float)
+    continuous_political_grid = -1*np.ones((n, m), dtype = float)
+    religion_grid = -1*np.ones((n, m), dtype = float)
+    ethnicity_grid = -1*np.ones((n, m), dtype = float)
+    for i in range(n):
+        for j in range(m):
+            if city_grid[i, j] == 1:  # 1 is our value for houses
+                affluence_grid[i, j] = np.random.choice(
+                    [affluence_levels["rich"], affluence_levels["middle"], affluence_levels["poor"]],
+                    p = p_affluence
+                )
+                continuous_political_grid[i,j] = rho * affluence_grid[i,j] + (1- rho) * noise[i,j]
+                if continuous_political_grid[i,j] < 0.33:
+                    politics_grid[i,j] = 0
+                elif 0.33 <= continuous_political_grid[i,j] < 0.66:
+                    politics_grid[i,j] = 0.5
+                else:
+                    politics_grid[i,j] = 1
+                religion_grid[i,j] = np.random.choice([1,0])
+                ethnicity_grid[i, j] = np.random.choice(ethnicity_choices, p = p_ethnicity)
+                house_grid[i, j] = np.random.uniform(0,1)  # Mark as a house
+
+    return affluence_grid, house_grid, politics_grid, religion_grid, ethnicity_grid
+
+
 def calculate_ethnicity_average(ethnicity_grid, x, y, target_ethnicity, r):
     """Calculate the proportion of agents around the point x,y (square radius r) that have the target ethnicity.
 
@@ -31,14 +75,17 @@ def calculate_ethnicity_average(ethnicity_grid, x, y, target_ethnicity, r):
             # don't include the house itself in the proportion, because we're either living there (so we don't include ourselves)
             # or we want to move there, in which case we'd be swapping with (x,y) so it shouldn't be included in the count
             if i == x and j == y:
-                break
+                continue
 
             if ethnicity_grid[i,j] != -1:
                 total += 1
                 if ethnicity_grid[i,j] == target_ethnicity:
                     count += 1
 
-    return count / total
+    if total == 0:
+        return 0
+    else:
+        return count / total
 
 def calculate_ethnic_delta(ethnicity_grid: np.ndarray, x1: int, y1: int, x2: int, y2: int, r) -> float:
     """Calculate ethnicity delta of the two points (x1,y1), (x2,y2).
@@ -125,12 +172,11 @@ def make_swap(affluence_grid, house_grid, politics_grid, religion_grid, ethnicit
         delta_religion = calculate_delta_ordered(religion_grid, x1, y1, x2, y2, r)
         delta_eth = calculate_ethnic_delta(ethnicity_grid, x1, y1, x2, y2, r)
 
-        delta = delta_econ + delta_pol + delta_religion + delta_eth     
+        delta = delta_econ + pol_weight*delta_pol + rel_weight*delta_religion + eth_weight*delta_eth     
 
         if delta > 0:
             # Swap the two agents
             affluence_grid[x1, y1], affluence_grid[x2, y2] = affluence_grid[x2, y2], affluence_grid[x1, y1]
-            house_grid[x1, y1], house_grid[x2, y2] = house_grid[x2, y2], house_grid[x1, y1]
             politics_grid[x1, y1], politics_grid[x2, y2] = politics_grid[x2, y2], politics_grid[x1, y1]
             religion_grid[x1, y1], religion_grid[x2, y2] = religion_grid[x2, y2], religion_grid[x1, y1]
             ethnicity_grid[x1, y1], ethnicity_grid[x2, y2] = ethnicity_grid[x2, y2], ethnicity_grid[x1, y1]

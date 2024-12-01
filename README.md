@@ -1,2 +1,2 @@
-# Housing_Multiple_IM
-Agent based model for house prices
+# Agent Based Modeling for House Prices
+This repo contains the code for a report done for the [Industrial Mathematics](http://www.drps.ed.ac.uk/21-22/dpt/cxmath11231.htm) course at Edinburgh University. Most of the functionality is in `modules/`, with the `toy_model` notebook reproducing the work of [Aguilera and Ugalde](https://onlinelibrary.wiley.com/doi/10.1155/2007/48589), and other notebooks performing sensitivity analysis and performing simulations based on real-world data.

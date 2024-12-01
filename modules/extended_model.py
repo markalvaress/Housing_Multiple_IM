@@ -1,6 +1,6 @@
 import numpy as np
 import random
-import aguilera_model as am
+import modules.aguilera_model as am
 
 def initialise_house_and_demog_grids(city_grid, affluence_levels, p_affluence, p_ethnicity):
     """Initialises house price and demographics grids based on the city grid.
